@@ -1,0 +1,60 @@
+---
+- name: Deploy Docker Compose Project
+  hosts: remote_server
+  become: true
+  vars_files:
+    - vars.yml   # Use the simple var file now
+  vars:
+    compose_project_dir: /opt/my_project
+    expose_port: 8080
+
+  tasks:
+    - name: Install Docker and Docker Compose
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - docker.io
+        - docker-compose
+
+    - name: Stop and remove existing containers
+      shell: |
+        docker-compose down -v || true
+      args:
+        chdir: "{{ compose_project_dir }}"
+      ignore_errors: yes
+
+    - name: Copy application files
+      copy:
+        src: ./my_project/
+        dest: "{{ compose_project_dir }}"
+
+    - name: Deploy docker-compose.yml from template
+      template:
+        src: ./templates/docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: '0644'
+
+    - name: Deploy index.php from template
+      template:
+        src: ./templates/index.php.j2
+        dest: "{{ compose_project_dir }}/src/index.php"
+        mode: '0644'
+
+    - name: Rebuild and run Docker Compose
+      shell: |
+        docker-compose build
+        docker-compose up -d
+      args:
+        chdir: "{{ compose_project_dir }}"
+    
+    - name: Run Docker Compose
+      shell: docker-compose up -d
+      args:
+        chdir: "{{ compose_project_dir }}"
+
+    - name: Ensure the application is exposed to WAN
+      ufw:
+        rule: allow
+        port: "{{ expose_port }}"
+        proto: tcp

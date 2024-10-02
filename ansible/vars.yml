@@ -1,0 +1,4 @@
+db_root_password: rootstrongPa55word@
+db_user: randomuser
+db_password: strongPa55word@
+db_name: my_database

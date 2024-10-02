@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: php_container
+    volumes:
+      - ./src:/var/www/html
+    networks:
+      - my_network
+
+  mysql:
+    image: mysql:5.7
+    container_name: mysql_container
+    environment:
+      MYSQL_ROOT_PASSWORD: "{{ db_root_password }}"
+      MYSQL_DATABASE: my_database
+      MYSQL_USER: "{{ db_user }}"
+      MYSQL_PASSWORD: "{{ db_password }}"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - my_network
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_container
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./src:/var/www/html
+    ports:
+      - "8080:80"
+    networks:
+      - my_network
+
+networks:
+  my_network:
+
+volumes:
+  mysql_data:
